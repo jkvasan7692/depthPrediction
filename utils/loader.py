@@ -12,10 +12,18 @@ from torchvision import datasets, transforms
 
 def load_data(_path, _ftype, coords, joints, cycles=3):
 
-    file_feature = os.path.join(_path, 'features2D' + _ftype + '.h5')
-    ff = h5py.File(file_feature, 'r')
-    file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
-    fl = h5py.File(file_label, 'r')
+    # data path
+    path_to_depth = './nyu_depth_v2_labeled.mat'
+
+    # read mat file
+    f = h5py.File(path_to_depth)
+
+    # file_feature = os.path.join(_path, 'features2D' + _ftype + '.h5')
+    # ff = h5py.File(file_feature, 'r')
+    ff = f['images']
+    # file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
+    # fl = h5py.File(file_label, 'r')
+    fl = f['labels']
 
     data_list = []
     num_samples = len(ff.keys())
