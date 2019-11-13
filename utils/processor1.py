@@ -191,7 +191,7 @@ class Processor(object):
 
         if self.epoch_info['mean_loss'] < self.best_loss:
             self.low_loss_updated = True
-        else
+        else:
             self.low_loss_updated = False
 
         # TBD: Ignore the topk block of code for now

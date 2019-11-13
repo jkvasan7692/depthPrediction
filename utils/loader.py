@@ -10,8 +10,18 @@ import torch
 from torchvision import datasets, transforms
 
 
-def load_data(_path, _ftype, coords, joints, cycles=3):
-
+def load_data(_path):
+    """
+    Requirement- Takes the file path, builds the train, test dataset images, depth map labels and returns them
+    :param _path:
+    :return:
+    data - Entire set of images
+    label - Entire set of depth map ground truth
+    data_train - training set of images
+    data_test - Testing set of images
+    labels_train - Depth map ground truth for training
+    labels_test - Depth maps ground truth for testing
+    """
     # data path
     path_to_depth = './nyu_depth_v2_labeled.mat'
 
@@ -53,26 +63,26 @@ def load_data(_path, _ftype, coords, joints, cycles=3):
     data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size=0.1)
     return data, labels, data_train, labels_train, data_test, labels_test
 
-
-def scale(_data):
-    data_scaled = _data.astype('float32')
-    data_max = np.max(data_scaled)
-    data_min = np.min(data_scaled)
-    data_scaled = (_data-data_min)/(data_max-data_min)
-    return data_scaled, data_max, data_min
-
-
-# descale generated data
-def descale(data, data_max, data_min):
-    data_descaled = data*(data_max-data_min)+data_min
-    return data_descaled
-
-
-def to_categorical(y, num_classes):
-    """ 1-hot encodes a tensor """
-    return np.eye(num_classes, dtype='uint8')[y]
+# All three below functions not being used.
+# def scale(_data):
+#     data_scaled = _data.astype('float32')
+#     data_max = np.max(data_scaled)
+#     data_min = np.min(data_scaled)
+#     data_scaled = (_data-data_min)/(data_max-data_min)
+#     return data_scaled, data_max, data_min
+#
+#
+# # descale generated data
+# def descale(data, data_max, data_min):
+#     data_descaled = data*(data_max-data_min)+data_min
+#     return data_descaled
 
 
+# def to_categorical(y, num_classes):
+#     """ 1-hot encodes a tensor """
+#     return np.eye(num_classes, dtype='uint8')[y]
+
+# Requirement here: self.data and self.label is important to us that should contain the images and depth map
 class TrainTestLoader(torch.utils.data.Dataset):
 
     def __init__(self, data, label, joints, coords, num_classes):
