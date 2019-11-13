@@ -44,20 +44,6 @@ class ReverseHubberLoss(nn.Module):
             # print("Loss", loss)
             return loss
 
-# def weights_init(m):
-#     classname = m.__class__.__name__
-#     if classname.find('Conv1d') != -1:
-#         m.weight.data.normal_(0.0, 0.02)
-#         if m.bias is not None:
-#             m.bias.data.fill_(0)
-#     elif classname.find('Conv2d') != -1:
-#         m.weight.data.normal_(0.0, 0.02)
-#         if m.bias is not None:
-#             m.bias.data.fill_(0)
-#     elif classname.find('BatchNorm') != -1:
-#         m.weight.data.normal_(1.0, 0.02)
-#         m.bias.data.fill_(0)
-#
 # def get_best_epoch_and_accuracy(path_to_model_files):
 #     all_models = os.listdir(path_to_model_files)
 #     while '_' not in all_models[-1]:
@@ -85,7 +71,7 @@ class Processor(object):
         self.meta_info = dict(epoch=0, iter=0)
         self.device = device
         self.io = torchlight.IO(
-            self.args.work_dir,
+            "./model_output/",
             save_log=self.args.save_log,
             print_log=self.args.print_log)
 #
@@ -94,7 +80,7 @@ class Processor(object):
         self.model.cuda('cuda:0')
         # TBD: Apart from the Resnet layers, all other layers has to be initialized with the weights as mentioned in the
         # paper, For now we can go ahead and try the default initialization which can be later modified
-#         self.model.apply(weights_init)
+        # [Resolved: Doing at Model level]
         self.loss = ReverseHubberLoss()
         self.best_loss = math.inf
         self.step_epochs = [math.ceil(float(self.args.num_epoch * x)) for x in self.args.step]
@@ -134,6 +120,7 @@ class Processor(object):
         for k, v in self.epoch_info.items():
             self.io.print_log('\t{}: {}'.format(k, v))
         # TBD: Ignore the pavi log for now. Will handle that later
+        # [Resolved: This is not being used in the parent system]
         # if self.args.pavi_log:
         #     self.io.log('train', self.meta_info['iter'], self.epoch_info)
 
@@ -149,21 +136,25 @@ class Processor(object):
 
             self.io.print_log(info)
 
-        # TBD: Ignore the pavi log for now. Will handle that later
+        # TBD: Ignore the pavi log for now. Will handle that later[Resolved - Not being used]
 #             if self.args.pavi_log:
 #                 self.io.log('train', self.meta_info['iter'], self.iter_info)
 
-#     def show_topk(self, k):
-#
-#         rank = self.result.argsort()
-#         hit_top_k = [l in rank[i, -k:] for i, l in enumerate(self.label)]
-#         accuracy = 100. * sum(hit_top_k) * 1.0 / len(hit_top_k)
-#         if accuracy > self.best_accuracy[0, k-1]:
-#             self.best_accuracy[0, k-1] = accuracy
-#             self.accuracy_updated = True
-#         else:
-#             self.accuracy_updated = False
-#         self.io.print_log('\tTop{}: {:.2f}%. Best so far: {:.2f}%.'.format(k, accuracy, self.best_accuracy[0, k-1]))
+    # def show_topk(self, k):
+    #     """
+    #     The function determines the loss of the latest model
+    #     :param k:
+    #     :return:
+    #     """
+    #     # rank = self.result.argsort()
+    #     # hit_top_k = [l in rank[i, -k:] for i, l in enumerate(self.label)]
+    #     # accuracy = 100. * sum(hit_top_k) * 1.0 / len(hit_top_k)
+    #     # if accuracy > self.best_accuracy[0, k-1]:
+    #     #     self.best_accuracy[0, k-1] = accuracy
+    #     #     self.accuracy_updated = True
+    #     # else:
+    #     #     self.accuracy_updated = False
+    #     self.io.print_log('\tTop{}: {:.2f}%. Best so far: {:.2f}%.'.format(k, accuracy, self.best_accuracy[0, k-1]))
 #
     def per_train(self):
 
@@ -198,6 +189,11 @@ class Processor(object):
         self.show_epoch_info()
         self.io.print_timer()
 
+        if self.epoch_info['mean_loss'] < self.best_loss:
+            self.low_loss_updated = True
+        else
+            self.low_loss_updated = False
+
         # TBD: Ignore the topk block of code for now
 #         # for k in self.args.topk:
 #         #     self.calculate_topk(k, show=False)
@@ -222,6 +218,7 @@ class Processor(object):
             # Forward pass to obtain the output
             with torch.no_grad():
                 output, _ = self.model(data)
+            # Append the output of the prediction map
             result_frag.append(output.data.cpu().numpy())
 
             # get loss in case of evaluation flag set to True
@@ -230,12 +227,15 @@ class Processor(object):
                 loss_value.append(loss.item())
                 label_frag.append(label.data.cpu().numpy())
 
+        # Store the depth prediction maps for each image in dictionary
         self.result = np.concatenate(result_frag)
         if evaluation:
+            # Store the depth label data for each image in dictionary
             self.label = np.concatenate(label_frag)
             self.epoch_info['mean_loss'] = loss_value
             self.show_epoch_info()
-#        TBD: Ignore the show top-k accuracy which will be resolved later
+#        TBD: Ignore the show top-k accuracy which will be resolved later. Keep ths aside for now. Anyways we are
+#        concerned about this when we really need the top k factor mean loss. Which is not our concern now.
 #             # show top-k accuracy
 #             for k in self.args.topk:
 #                 self.show_topk(k)
@@ -257,15 +257,17 @@ class Processor(object):
                 self.per_test()
                 self.io.print_log('Done.')
 
-            # TBD: save model and weights
-            # if self.accuracy_updated:
-            #     torch.save(self.model.state_dict(),
-            #                os.path.join(self.args.work_dir,
-            #                             'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
-            #     if self.epoch_info['mean_loss'] < self.best_loss:
-            #         self.best_loss = self.epoch_info['mean_loss']
-            #         self.best_epoch = epoch
+            # TBD: save model and weights.
+            # [Resolved] Only needs to be verified
+            if self.low_loss_updated:
+                torch.save(self.model.state_dict(),
+                           os.path.join(self.args.work_dir,
+                                        'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
+                if self.epoch_info['mean_loss'] < self.best_loss:
+                    self.best_loss = self.epoch_info['mean_loss']
+                    self.best_epoch = epoch
 
+    # The function is not being used. So lets not care about this for now.
     def test(self):
 
         # the path of weights must be appointed

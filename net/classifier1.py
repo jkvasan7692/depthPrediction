@@ -39,6 +39,7 @@ class UpconvLayer(nn.Module):
         super(UpconvLayer, self).__init__()
         self.unpool = nn.UpsamplingNearest2d(scale_factor=2)
         self.conv = nn.Conv2d(a_in_channels, a_out_channels, kernel_size=a_kernel_size, stride=a_stride, padding=2)
+        self.conv.weight.data.normal_(0.0, 0.01)
 
     def forward(self, a_input):
         a_hidden = self.unpool(a_input)
@@ -57,13 +58,16 @@ class DepthPredictionNet(nn.Module):
         self.resnet_pretrained = ResnetCustom()
         print(self.resnet_pretrained)
         self.conv1 = nn.Conv2d(2048, 1024, 1)
+        self.conv1.weight.data.normal_(0.0, 0.01)
         self.norm1 = nn.BatchNorm2d(1024)
+        self.norm1.weight.data.normal_(0.0, 0.01)
         # Batch normalization to be added in this layer
         self.upconv1 = UpconvLayer(1024, 512)
         self.upconv2 = UpconvLayer(512, 256)
         self.upconv3 = UpconvLayer(256, 128)
         self.upconv4 = UpconvLayer(128, 64)
         self.conv2 = nn.Conv2d(64, 1, kernel_size=3, stride=1, padding=1)
+        self.conv2.weight.data.normal_(0.0, 0.01)
 
     def forward(self, a_input):
         """
