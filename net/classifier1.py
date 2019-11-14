@@ -68,6 +68,7 @@ class DepthPredictionNet(nn.Module):
         self.upconv4 = UpconvLayer(128, 64)
         self.conv2 = nn.Conv2d(64, 1, kernel_size=3, stride=1, padding=1)
         self.conv2.weight.data.normal_(0.0, 0.01)
+        self.upsample = nn.UpsamplingBilinear2d(size=(480, 640))
 
     def forward(self, a_input):
         """
@@ -75,17 +76,20 @@ class DepthPredictionNet(nn.Module):
         :param a_input:
         :return:
         """
+        #print(a_input.shape)
         l_hidden1 = self.resnet_pretrained(a_input)
         l_hidden2 = self.norm1(self.conv1(l_hidden1))
-        print(l_hidden2.shape)
+        #print(l_hidden2.shape)
         l_hidden3 = F.relu(self.upconv1(l_hidden2))
-        print(l_hidden3.shape)
+        #print(l_hidden3.shape)
         l_hidden4 = F.relu(self.upconv2(l_hidden3))
-        print(l_hidden4.shape)
+        #print(l_hidden4.shape)
         l_hidden5 = F.relu(self.upconv3(l_hidden4))
-        print(l_hidden5.shape)
+        #print(l_hidden5.shape)
         l_hidden6 = F.relu(self.upconv4(l_hidden5))
-        print(l_hidden6.shape)
-        l_output = F.relu(self.conv2(l_hidden6))
-        print(l_output.shape)
+        #print(l_hidden6.shape)
+        l_output1 = F.relu(self.conv2(l_hidden6))
+        #print(l_output1.shape)
+        l_output = self.upsample(l_output1)
+        #print(l_output.shape)
         return l_output

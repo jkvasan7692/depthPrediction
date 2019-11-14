@@ -25,7 +25,7 @@ class ReverseHubberLoss(nn.Module):
         :return:
         """
         ret = self._reverse_hubber_loss(predicted_out, target)
-        # print("Return", ret)
+        #print("Return", ret)
         return torch.mean(ret)
 
     def _reverse_hubber_loss(self, a_input, a_target):
@@ -35,14 +35,14 @@ class ReverseHubberLoss(nn.Module):
         :param target:
         :return:
         """
-        if a_target.requires_grad:
-            error = torch.abs(a_input - a_target)
-            # print("Error", error)
-            self.c = 0.2*torch.max(error)
-            # print(self.c)
-            loss = torch.where(error <= self.c, torch.abs(error), (error**2 + self.c**2)/(2*self.c))
-            # print("Loss", loss)
-            return loss
+        #if a_target.requires_grad:
+        error = torch.abs(a_input - a_target)
+        #print("Error", error)
+        self.c = 0.2*torch.max(error)
+        #print(self.c)
+        loss = torch.where(error <= self.c, torch.abs(error), (error**2 + self.c**2)/(2*self.c))
+        #print("Loss", loss)
+        return loss
 
 # def get_best_epoch_and_accuracy(path_to_model_files):
 #     all_models = os.listdir(path_to_model_files)
@@ -64,7 +64,7 @@ class Processor(object):
 
         self.args = args
         # TBD:The data loader class has to be implemented to load the train, test and evaluation images
-        # self.data_loader = data_loader
+        self.data_loader = data_loader
         self.result = dict()
         self.iter_info = dict()
         self.epoch_info = dict()
@@ -167,10 +167,10 @@ class Processor(object):
         for data, label in loader:
             # get data
             data = data.float().to(self.device)
-            label = label.long().to(self.device)
+            label = label.float().to(self.device)
 
             # forward pass and compute the loss
-            output, _ = self.model(data)
+            output = self.model(data)
             loss = self.loss(output, label)
 
             # backward and update the weights
@@ -189,7 +189,7 @@ class Processor(object):
         self.show_epoch_info()
         self.io.print_timer()
 
-        if self.epoch_info['mean_loss'] < self.best_loss:
+        if np.mean(self.epoch_info['mean_loss']) < self.best_loss:
             self.low_loss_updated = True
         else:
             self.low_loss_updated = False
@@ -213,11 +213,11 @@ class Processor(object):
 
             # get data from the loader class
             data = data.float().to(self.device)
-            label = label.long().to(self.device)
+            label = label.float().to(self.device)
 
             # Forward pass to obtain the output
             with torch.no_grad():
-                output, _ = self.model(data)
+                output = self.model(data)
             # Append the output of the prediction map
             result_frag.append(output.data.cpu().numpy())
 
@@ -261,10 +261,10 @@ class Processor(object):
             # [Resolved] Only needs to be verified
             if self.low_loss_updated:
                 torch.save(self.model.state_dict(),
-                           os.path.join(self.args.work_dir,
-                                        'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, self.best_accuracy.item())))
-                if self.epoch_info['mean_loss'] < self.best_loss:
-                    self.best_loss = self.epoch_info['mean_loss']
+                           os.path.join('./model_output/',
+                                        'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, 1)))
+                if np.mean(self.epoch_info['mean_loss']) < self.best_loss:
+                    self.best_loss = np.mean(self.epoch_info['mean_loss'])
                     self.best_epoch = epoch
 
     # The function is not being used. So lets not care about this for now.
