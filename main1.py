@@ -86,8 +86,8 @@ parser.add_argument('--optimizer', type=str, default='SGD', metavar='O',
                     help='optimizer (default: SGD)')
 
 # Learning rate - 0.1
-parser.add_argument('--base-lr', type=float, default=0.1, metavar='L',
-                    help='base learning rate (default: 0.1)')
+parser.add_argument('--base-lr', type=float, default=0.01, metavar='L',
+                    help='base learning rate (default: 0.01)')
 
 # Modification of learning rate steps - [0.5, 0.75, 0.875]. Currently not adjusting the learning rate
 parser.add_argument('--step', type=list, default=[0.5, 0.75, 0.875], metavar='[S]',
