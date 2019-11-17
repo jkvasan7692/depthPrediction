@@ -76,7 +76,7 @@ class Processor(object):
             print_log=self.args.print_log)
 
         # Initialize timer to see the time taken for each batch
-        self.io.init_timer(["batch_processing_time"])
+        self.io.init_timer("batch_processing_time")
 #
         # model
         self.model = classifier1.DepthPredictionNet()
