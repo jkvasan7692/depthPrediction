@@ -129,16 +129,16 @@ class IO():
             with open('{}/log.txt'.format(self.work_dir), 'a') as f:
                 print(str)
 
-    # def init_timer(self, *name):
-    #     self.record_time()
-    #     self.split_timer = {k: 0.0000001 for k in name}
+    def init_timer(self, *name):
+        self.record_time()
+        self.split_timer = {k: 0.0000001 for k in name}
 
-    # def check_time(self, name):
-    #     self.split_timer[name] += self.split_time()
-    #
-    # def record_time(self):
-    #     self.cur_time = time.time()
-    #     return self.cur_time
+    def check_time(self, name):
+        self.split_timer[name] += self.split_time()
+
+    def record_time(self):
+        self.cur_time = time.time()
+        return self.cur_time
 
     def split_time(self):
         split_time = time.time() - self.cur_time

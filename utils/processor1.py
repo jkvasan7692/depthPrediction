@@ -74,6 +74,9 @@ class Processor(object):
             "./model_output/",
             save_log=self.args.save_log,
             print_log=self.args.print_log)
+
+        # Initialize timer to see the time taken for each batch
+        self.io.init_timer(["batch_processing_time"])
 #
         # model
         self.model = classifier1.DepthPredictionNet()
@@ -164,6 +167,9 @@ class Processor(object):
         loader = self.data_loader['train']
         loss_value = []
 
+        # Reset time to current
+        self.io.record_time()
+
         for data, label in loader:
             # get data
             data = data.float().to(self.device)
@@ -187,6 +193,7 @@ class Processor(object):
 
         self.epoch_info['mean_loss'] = np.mean(loss_value)
         self.show_epoch_info()
+        self.io.check_time("batch_processing_time")
         self.io.print_timer()
 
         if np.mean(self.epoch_info['mean_loss']) < self.best_loss:
