@@ -163,13 +163,13 @@ else:
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
-        drop_last=True))
+        drop_last=False))
     data_loader_train_test.append(torch.utils.data.DataLoader(
         dataset=loader_test.NYU_Depth_V2(train=False),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
-        drop_last=True))
+        drop_last=False))
     data_loader_train_test = dict(train=data_loader_train_test[0], test=data_loader_train_test[1])
 
 pr = processor1.Processor(args, data_loader_train_test, device=device)
