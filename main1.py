@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch
 import torchlight
 
-DEBUG = True
+DEBUG = False
 
 def unit_test_loss():
     """
@@ -139,18 +139,18 @@ device = 'cuda:0'
 
 #%% TBD: Load the dataset
 if DEBUG == False:
-    data, labels, data_train, labels_train, data_test, labels_test = \
-        loader.load_data(data_path, ftype, coords, joints, cycles=cycles)
-    num_classes = np.unique(labels_train).shape[0]
+    # data, labels, data_train, labels_train, data_test, labels_test = \
+        # loader.load_data(data_path, ftype, coords, joints, cycles=cycles)
+    # num_classes = np.unique(labels_train).shape[0]
     data_loader_train_test = list()
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(data_train, labels_train, joints, coords, num_classes),
+        dataset=loader.TrainTestLoader(train=True),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=True))
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(data_test, labels_test, joints, coords, num_classes),
+        dataset=loader.TrainTestLoader(train=False),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
@@ -181,4 +181,3 @@ if args.train:
 
 # TBD: The test function has to be implemented, instead of the per_test function.
 pr.per_test()
-
