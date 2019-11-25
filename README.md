@@ -48,6 +48,7 @@ The project directory structure is as follows:
 7. Processor - Unit test the functionalities - [Kithi] - [done]
 8. Processor - Adjusting learning rate based on change between two mean loss steps
 9. Loader - Have a train, test and evaluation dataset.
+10. Semantic segmentation link: http://cs231n.stanford.edu/reports/2017/pdfs/209.pdf
 
 ## Authors
 
