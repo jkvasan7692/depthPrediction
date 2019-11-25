@@ -58,7 +58,7 @@ class TrainTestLoader(torch.utils.data.Dataset):
 
     def read_data(self, train):
         # data path
-        path_to_depth = './nyu_depth_v2_labeled.mat'
+        path_to_depth = '../data/nyu_depth_v2_labeled.mat'
 
         # read mat file
         f = h5py.File(path_to_depth)
