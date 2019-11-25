@@ -86,7 +86,7 @@ class Processor(object):
         # [Resolved: Doing at Model level]
         self.loss = ReverseHubberLoss()
         self.best_loss = math.inf
-        self.step_epochs = [math.ceil(float(self.args.num_epoch * x)) for x in self.args.step]
+        #self.step_epochs = [math.ceil(float(self.args.num_epoch * x)) for x in self.args.step]
         self.best_epoch = None
         self.best_mean_error = np.zeros((1, np.max(self.args.topk)))
         self.mean_error_updated = False
@@ -107,15 +107,17 @@ class Processor(object):
         else:
             raise ValueError()
         self.lr = self.args.base_lr
+        self.mean_loss_per_lr_step = 0
 
     def adjust_lr(self):
 
-        if self.args.optimizer == 'SGD' and \
-                (self.meta_info['epoch'] % 2 == 0):
-            lr = self.lr * 0.1
-            for param_group in self.optimizer.param_groups:
-                param_group['lr'] = lr
-            self.lr = lr
+        if self.args.optimizer == 'SGD' and (self.meta_info['epoch'] % self.args.step == 0):
+            if np.fabs(self.mean_loss_per_lr_step - np.mean(self.epoch_info['mean_loss'])) < self.args.lr_thresh:
+                lr = self.lr * 0.5
+                for param_group in self.optimizer.param_groups:
+                    param_group['lr'] = lr
+                self.lr = lr
+            self.mean_loss_per_lr_step = np.mean(self.epoch_info['mean_loss'])
 #
     def show_epoch_info(self):
 
@@ -161,7 +163,7 @@ class Processor(object):
     def per_train(self):
 
         self.model.train()
-#         self.adjust_lr()
+        self.adjust_lr()
         # TBD: Implement the class to load the dataset.
         loader = self.data_loader['train']
         loss_value = []
