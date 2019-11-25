@@ -108,15 +108,14 @@ class Processor(object):
             raise ValueError()
         self.lr = self.args.base_lr
 
-    # def adjust_lr(self):
-    #
-    #     # if self.args.optimizer == 'SGD' and\
-    #     if self.meta_info['epoch'] in self.step_epochs:
-    #         lr = self.args.base_lr * (
-    #                 0.1 ** np.sum(self.meta_info['epoch'] >= np.array(self.step_epochs)))
-    #         for param_group in self.optimizer.param_groups:
-    #             param_group['lr'] = lr
-    #         self.lr = lr
+    def adjust_lr(self):
+
+        if self.args.optimizer == 'SGD' and \
+                (self.meta_info['epoch'] % 2 == 0):
+            lr = self.lr * 0.1
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = lr
+            self.lr = lr
 #
     def show_epoch_info(self):
 
