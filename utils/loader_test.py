@@ -14,7 +14,7 @@ class NYU_Depth_V2(data.Dataset):
         else:
             num_images = np.int(500 * 0.1)
         self.images = np.random.rand(num_images, 3,  228, 304) * 256
-        self.depth = np.random.rand(num_images, 1, 480, 640) * 10
+        self.depth = np.random.rand(num_images, 1, 480, 640)
         self.transform = transforms.Compose([
             transforms.Resize(size=(240,320), interpolation=1),
             transforms.CenterCrop(size=(228,304))
@@ -25,6 +25,7 @@ class NYU_Depth_V2(data.Dataset):
     def __len__(self):
         if hasattr(self, 'images'):
             length = len(self.images)
+            print("Length", length)
 
         return length
 

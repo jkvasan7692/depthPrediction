@@ -86,8 +86,8 @@ parser.add_argument('--optimizer', type=str, default='SGD', metavar='O',
                     help='optimizer (default: SGD)')
 
 # Learning rate - 0.1
-parser.add_argument('--base-lr', type=float, default=0.1, metavar='L',
-                    help='base learning rate (default: 0.1)')
+parser.add_argument('--base-lr', type=float, default=0.01, metavar='L',
+                    help='base learning rate (default: 0.01)')
 
 # Modification of learning rate steps - [0.5, 0.75, 0.875]. Currently not adjusting the learning rate
 parser.add_argument('--step', type=list, default=[0.5, 0.75, 0.875], metavar='[S]',
@@ -163,13 +163,13 @@ else:
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
-        drop_last=True))
+        drop_last=False))
     data_loader_train_test.append(torch.utils.data.DataLoader(
         dataset=loader_test.NYU_Depth_V2(train=False),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
-        drop_last=True))
+        drop_last=False))
     data_loader_train_test = dict(train=data_loader_train_test[0], test=data_loader_train_test[1])
 
 pr = processor1.Processor(args, data_loader_train_test, device=device)
