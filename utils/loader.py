@@ -1,114 +1,73 @@
 # sys
 import h5py
 import os
+import sys
 import numpy as np
-#import tensorflow as tf
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
-
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import skimage.io as io
 # torch
 import torch
 from torchvision import datasets, transforms
+try:
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+except:
+    pass
+import cv2
 
-
-def load_data(_path):
-    """
-    Requirement- Takes the file path, builds the train, test dataset images, depth map labels and returns them
-    :param _path:
-    :return:
-    data - Entire set of images
-    label - Entire set of depth map ground truth
-    data_train - training set of images
-    data_test - Testing set of images
-    labels_train - Depth map ground truth for training
-    labels_test - Depth maps ground truth for testing
-    """
-    # data path
-    path_to_depth = './nyu_depth_v2_labeled.mat'
-
-    # read mat file
-    f = h5py.File(path_to_depth)
-
-    # file_feature = os.path.join(_path, 'features2D' + _ftype + '.h5')
-    # ff = h5py.File(file_feature, 'r')
-    ff = f['images']
-    # file_label = os.path.join(_path, 'labels' + _ftype + '.h5')
-    # fl = h5py.File(file_label, 'r')
-    fl = f['labels']
-
-    data_list = []
-    num_samples = len(ff.keys())
-    num_frames = len(ff[list(ff.keys())[0]])
-    print(num_samples , num_frames)
-    time_steps = 0
-    labels = np.empty(num_samples*num_frames)
-    for si in range(num_samples):
-        ff_group_key = list(ff.keys())[si]
-        #print(si, ff_group_key)
-        data_list.append(list(ff[ff_group_key]))  # Get the data
-        time_steps_curr = np.shape(ff[ff_group_key])[1]
-        if time_steps_curr > time_steps:
-            time_steps = time_steps_curr
-        labels[si*num_frames:(si+1)*num_frames] = fl[list(fl.keys())[si]][()]
-
-    data = np.empty((num_samples*num_frames, time_steps*cycles, joints*coords))
-    print(np.shape(data))
-    for si in range(num_samples):
-        #data_list_curr = np.zeros((time_steps, np.size(data_list[si],1)))
-        data_list_curr = np.tile(data_list[si], (int(np.ceil(time_steps / np.shape(ff[ff_group_key])[1])), 1))
-        print(np.shape(data_list_curr))
-        #data_list_curr[0:k.shape[0],:] = k
-        for ri in range(num_frames):
-            for ci in range(cycles):
-                data[si+ri, time_steps * ci:data_list_curr.shape[1], :] = data_list_curr[ri, 0:time_steps]
-    data_train, data_test, labels_train, labels_test = train_test_split(data, labels, test_size=0.1)
-    return data, labels, data_train, labels_train, data_test, labels_test
-
-# All three below functions not being used.
-# def scale(_data):
-#     data_scaled = _data.astype('float32')
-#     data_max = np.max(data_scaled)
-#     data_min = np.min(data_scaled)
-#     data_scaled = (_data-data_min)/(data_max-data_min)
-#     return data_scaled, data_max, data_min
-#
-#
-# # descale generated data
-# def descale(data, data_max, data_min):
-#     data_descaled = data*(data_max-data_min)+data_min
-#     return data_descaled
-
-
-# def to_categorical(y, num_classes):
-#     """ 1-hot encodes a tensor """
-#     return np.eye(num_classes, dtype='uint8')[y]
-
-# Requirement here: self.data and self.label is important to us that should contain the images and depth map
 class TrainTestLoader(torch.utils.data.Dataset):
 
-    def __init__(self, data, label, joints, coords, num_classes):
+    def __init__(self, train = True):
         # data: N C T J
-        self.data = np.reshape(data, (data.shape[0], data.shape[1], joints, coords, 1))
-        self.data = np.moveaxis(self.data, [1, 2, 3], [2, 3, 1])
+        np.random.seed(0)
 
-        # load label
-        self.label = label
-
-        self.N, self.C, self.T, self.J, self.M = self.data.shape
+        self.data, self.label = self.read_data(train)
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(size=(240,320), interpolation=1),
+            transforms.CenterCrop(size=(228,304)),
+            transforms.ToTensor(),
+            ])
 
     def __len__(self):
         return len(self.label)
 
     def __getitem__(self, index):
         # get data
-        data_numpy = np.array(self.data[index])
-        label = self.label[index]
+        data_numpy = np.array(self.data[index]).astype('float32')/255.0
+        # print(np.amax(data_numpy))
+        # asd
+        label = self.label[index]/10
+        img_ = np.zeros((3, data_numpy.shape[2], data_numpy.shape[1]), dtype='float32')
+        img_[0,:,:] = data_numpy[0,:,:].T
+        img_[1,:,:] = data_numpy[1,:,:].T
+        img_[2,:,:] = data_numpy[2,:,:].T
 
-        # processing
-        # if self.random_choose:
-        #     data_numpy = tools.random_choose(data_numpy, self.window_size)
-        # elif self.window_size > 0:
-        #     data_numpy = tools.auto_pading(data_numpy, self.window_size)
-        # if self.random_move:
-        #     data_numpy = tools.random_move(data_numpy)
+        # print(data_numpy)
+        # print(type(data_numpy))
+        label = np.expand_dims(label, axis=0)
+        label_ = np.zeros((1, label.shape[2], label.shape[1]), dtype='float32')
+        label_[0,:,:] = label[0,:,:].T
+        label_ = torch.from_numpy(label_)
 
-        return data_numpy, label
+        data_tensor = torch.from_numpy(img_)
+        data = self.transform(data_tensor)
+        return data, label_
+
+    def read_data(self, train):
+        # data path
+        path_to_depth = '../data/nyu_depth_v2_labeled.mat'
+
+        # read mat file
+        f = h5py.File(path_to_depth)
+        num_samples = f['images'].shape[0]
+        idx = int(num_samples*0.9)
+        if train:
+            idxs = np.arange(idx)
+        else:
+            idxs = np.arange(idx + 1, num_samples-1)
+        data = np.array(f['images'])[idxs]
+        label = np.array(f['depths'])[idxs]
+        return data, label

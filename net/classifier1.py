@@ -67,6 +67,7 @@ class DepthPredictionNet(nn.Module):
         self.upconv3 = UpconvLayer(256, 128)
         self.upconv4 = UpconvLayer(128, 64)
         self.conv2 = nn.Conv2d(64, 1, kernel_size=3, stride=1, padding=1)
+        self.dropout1 = nn.Dropout2d(p= 0.5, inplace=False)
         self.conv2.weight.data.normal_(0.0, 0.01)
         self.upsample = nn.UpsamplingBilinear2d(size=(480, 640))
 
@@ -87,8 +88,9 @@ class DepthPredictionNet(nn.Module):
         l_hidden5 = F.relu(self.upconv3(l_hidden4))
         #print(l_hidden5.shape)
         l_hidden6 = F.relu(self.upconv4(l_hidden5))
+        l_hidden7 = self.dropout1(l_hidden6)
         #print(l_hidden6.shape)
-        l_output1 = F.relu(self.conv2(l_hidden6))
+        l_output1 = F.relu(self.conv2(l_hidden7))
         #print(l_output1.shape)
         l_output = self.upsample(l_output1)
         #print(l_output.shape)

@@ -1,12 +1,17 @@
 import argparse
 import os
+import sys
 import numpy as np
 from utils import processor1, loader
 from net import classifier1
 import torch.nn as nn
+import torchvision
+from torchvision import transforms
+
 
 import torch
 import torchlight
+import skimage.io as io
 
 
 def unit_test_loss():
@@ -138,9 +143,24 @@ args = parser.parse_args()
 device = 'cuda:0'
 
 # pr = processor1.Processor(args, None, device)
-data, labels, data_train, labels_train, data_test, labels_test = \
-    loader.load_data(data_path)
-
+# data, labels, data_train, labels_train, data_test, labels_test = \
+#     loader.load_data(data_path)
+a = loader.TrainTestLoader(False)
+d,l = a.__getitem__(0)
+print(type(d))
+print(type(l))
+print(l.shape)
+print(d.shape)
+# print(np.amax(d))
+img__ = d.numpy()
+# print(np.amax(l))
+img_ = np.zeros((d.shape[1], d.shape[2], 3))
+img_[:,:,0] = d[0,:,:]
+img_[:,:,1] = d[1,:,:]
+img_[:,:,2] = d[2,:,:]
+img__ = img_.astype('float32')
+io.imshow(img__)
+io.show()
 # This part of the code should work after the above is resolved.
 # data_loader_train_test.append(torch.utils.data.DataLoader(
 #     dataset=loader.TrainTestLoader(data_train, labels_train, joints, coords, num_classes),
