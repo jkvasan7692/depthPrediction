@@ -74,7 +74,7 @@ parser.add_argument('--num-worker', type=int, default=4, metavar='W',
                     help='input batch size for training (default: 4)')
 
 # Starting epoch for training - 0
-parser.add_argument('--start_epoch', type=int, default=0, metavar='SE',
+parser.add_argument('--start_epoch', type=int, default=1, metavar='SE',
                     help='starting epoch of training (default: 0)')
 
 # Number of epochs - 500
@@ -90,8 +90,12 @@ parser.add_argument('--base-lr', type=float, default=0.01, metavar='L',
                     help='base learning rate (default: 0.01)')
 
 # Modification of learning rate steps - [0.5, 0.75, 0.875]. Currently not adjusting the learning rate
-parser.add_argument('--step', type=list, default=[0.5, 0.75, 0.875], metavar='[S]',
-                    help='fraction of steps when learning rate will be decreased (default: [0.5, 0.75, 0.875])')
+parser.add_argument('--step', type=int, default=6, metavar='ST',
+                    help='iteration step after which the learning rate is reduced by a fraction of 0.5')
+
+# Learning rate threshold
+parser.add_argument('--lr_thresh', type=int, default=0.01, metavar='LT',
+                    help='learning rate threshold')
 
 # Nesterov - Dunno what is this, branched of the parent code
 parser.add_argument('--nesterov', action='store_true', default=True,

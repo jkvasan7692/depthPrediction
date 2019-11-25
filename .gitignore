@@ -11,8 +11,6 @@ model_output/
 *.exe
 *.o
 *.so
-
-*.so
 *.pyc
 *.out
 *.mat
