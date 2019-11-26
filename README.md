@@ -38,14 +38,17 @@ The project directory structure is as follows:
 4. model_output - Stores the model outputs including checkpoint results - To be implemented
 
 ## ToDo list
-1. Model - Implement the weight initialization for the other layers, Modify the up-sampling instead of using UpsampleNearest2d function - [Kirthi]  - will do today
+1. Model - Implement the weight initialization for the other layers - [done], Modify the up-sampling instead of using UpsampleNearest2d function - [Kirthi]  - will do today
 2. Model - Need to check for the up-projection layer and fast up-convolution and up-projection layers
-3. Loader - Class to be modified to load the dataset for the current application. Need to integrate this
-   with the rest of the code in the main1.py and processor1.py file
+3. Loader - Class to be modified to load the dataset for the current application. Need to integrate this - [done]
+   with the rest of the code in the main1.py and processor1.py file [done]
 4. Processor - Saving of the best features to be completed - Least priority
-5. Processor - Check for the TBD tagged comments and resolve them based on priority
-6. Processor - Implement saving of the intermediate checkpoints for debugging during training.
-7. Processor - Unit test the functionalities - [Kithi]
+5. Processor - Check for the TBD tagged comments and resolve them based on priority - [Noted all points]
+6. Processor - Implement saving of the intermediate checkpoints for debugging during training. - [Done. Need to save epochs based on some benchmark]
+7. Processor - Unit test the functionalities - [Kithi] - [done]
+8. Processor - Adjusting learning rate based on change between two mean loss steps
+9. Loader - Have a train, test and evaluation dataset.
+10. Semantic segmentation link: http://cs231n.stanford.edu/reports/2017/pdfs/209.pdf
 
 ## Authors
 
