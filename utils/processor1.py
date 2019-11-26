@@ -163,6 +163,7 @@ class Processor(object):
         self.model.train()
 #         self.adjust_lr()
         # TBD: Implement the class to load the dataset.
+        # [Resolved] : Class implemented
         loader = self.data_loader['train']
         loss_value = []
 
@@ -210,6 +211,7 @@ class Processor(object):
 
         self.model.eval()
         # TBD: Once the loader class has been implemented then the dataset can be clearly demarcated
+        # [Resolved]: The loader class has been implemented for now.
         loader = self.data_loader['test']
         loss_value = []
         result_frag = []
