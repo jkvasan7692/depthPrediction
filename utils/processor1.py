@@ -67,7 +67,8 @@ class Processor(object):
         self.data_loader = data_loader
         self.result = dict()
         self.iter_info = dict()
-        self.epoch_info = dict()
+        self.train_epoch_info = dict()
+        self.eval_epoch_info = dict()
         self.meta_info = dict(epoch=0, iter=0)
         self.device = device
         self.io = torchlight.IO(
@@ -85,6 +86,8 @@ class Processor(object):
         # paper, For now we can go ahead and try the default initialization which can be later modified
         # [Resolved: Doing at Model level]
         self.loss = ReverseHubberLoss()
+        self.mean_loss = nn.MSELoss()
+        self.abs_loss = nn.L1Loss()
         self.best_loss = math.inf
         #self.step_epochs = [math.ceil(float(self.args.num_epoch * x)) for x in self.args.step]
         self.best_epoch = None
@@ -112,16 +115,16 @@ class Processor(object):
     def adjust_lr(self):
 
         if self.args.optimizer == 'SGD' and (self.meta_info['epoch'] % self.args.step == 0):
-            if np.fabs(self.mean_loss_per_lr_step - np.mean(self.epoch_info['mean_loss'])) < self.args.lr_thresh:
+            if np.fabs(self.mean_loss_per_lr_step - np.mean(self.eval_epoch_info['mean_loss'])) < self.args.lr_thresh:
                 lr = self.lr * 0.5
                 for param_group in self.optimizer.param_groups:
                     param_group['lr'] = lr
                 self.lr = lr
-            self.mean_loss_per_lr_step = np.mean(self.epoch_info['mean_loss'])
+            self.mean_loss_per_lr_step = np.mean(self.eval_epoch_info['mean_loss'])
 #
-    def show_epoch_info(self):
+    def show_epoch_info(self, data_item):
 
-        for k, v in self.epoch_info.items():
+        for k, v in data_item.items():
             self.io.print_log('\t{}: {}'.format(k, v))
         # TBD: Ignore the pavi log for now. Will handle that later
         # [Resolved: This is not being used in the parent system]
@@ -193,15 +196,10 @@ class Processor(object):
             self.show_iter_info()
             self.meta_info['iter'] += 1
 
-        self.epoch_info['mean_loss'] = np.mean(loss_value)
-        self.show_epoch_info()
+        self.train_epoch_info['mean_loss'] = np.mean(loss_value)
+        self.show_epoch_info(self.train_epoch_info)
         self.io.check_time("batch_processing_time")
         self.io.print_timer()
-
-        if np.mean(self.epoch_info['mean_loss']) < self.best_loss:
-            self.low_loss_updated = True
-        else:
-            self.low_loss_updated = False
 
         # TBD: Ignore the topk block of code for now
 #         # for k in self.args.topk:
@@ -216,6 +214,8 @@ class Processor(object):
         # [Resolved]: The loader class has been implemented for now.
         loader = self.data_loader['test']
         loss_value = []
+        rmse_loss_value = []
+        abs_loss_value = []
         result_frag = []
         label_frag = []
 
@@ -234,7 +234,11 @@ class Processor(object):
             # get loss in case of evaluation flag set to True
             if evaluation:
                 loss = self.loss(output, label)
+                rmse_loss = self.mean_loss(output,label)
+                abs_loss = self.abs_loss(output, label)
                 loss_value.append(loss.item())
+                rmse_loss_value.append(rmse_loss.item())
+                abs_loss_value.append(abs_loss.item())
                 label_frag.append(label.data.cpu().numpy())
 
         # Store the depth prediction maps for each image in dictionary
@@ -242,8 +246,15 @@ class Processor(object):
         if evaluation:
             # Store the depth label data for each image in dictionary
             self.label = np.concatenate(label_frag)
-            self.epoch_info['mean_loss'] = loss_value
-            self.show_epoch_info()
+            self.eval_epoch_info['mean_loss'] = np.mean(loss_value)
+            self.eval_epoch_info['rmse_loss'] = np.sqrt(np.mean(rmse_loss_value))
+            self.eval_epoch_info['abs_loss'] = np.mean(abs_loss_value)
+            self.show_epoch_info(self.eval_epoch_info)
+            if np.fabs(self.eval_epoch_info['mean_loss'] - self.best_loss) > self.args.lr_thresh:
+                self.low_loss_updated = True
+            else:
+                self.low_loss_updated = False
+
 #        TBD: Ignore the show top-k accuracy which will be resolved later. Keep ths aside for now. Anyways we are
 #        concerned about this when we really need the top k factor mean loss. Which is not our concern now.
 #             # show top-k accuracy
@@ -270,12 +281,11 @@ class Processor(object):
             # TBD: save model and weights.
             # [Resolved] Only needs to be verified
             if self.low_loss_updated:
+                self.best_loss = self.eval_epoch_info['mean_loss']
+                self.best_epoch = epoch
                 torch.save(self.model.state_dict(),
                            os.path.join('./model_output/',
                                         'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, 1)))
-                if np.mean(self.epoch_info['mean_loss']) < self.best_loss:
-                    self.best_loss = np.mean(self.epoch_info['mean_loss'])
-                    self.best_epoch = epoch
 
     # The function is not being used. So lets not care about this for now.
     def test(self):

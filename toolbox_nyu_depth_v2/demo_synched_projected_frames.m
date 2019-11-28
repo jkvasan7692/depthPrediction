@@ -1,16 +1,17 @@
 % The directory where you extracted the raw dataset.
-datasetDir = '/media/kirthi/Seagate Backup Plus Drive/MLProjectDataset';
+datasetDir = '/home/jkv92/data';
 
 sceneDirs = GetSubDirsFirstLevelOnly(datasetDir);
 
 structInd = 1;
+fileCount = 1;
 
-imgRgbToStruct = zeros(480, 640, 3, 5000, 'uint8');
-imgRawDepthToStruct = zeros(480, 640,5000, 'single');
-imgDepthsToStruct = zeros(480, 640,5000, 'single');
+imgRgbToStruct = zeros(480, 640, 3, 100, 'uint8');
+imgRawDepthToStruct = zeros(480, 640,100, 'single');
+imgDepthsToStruct = zeros(480, 640,100, 'single');
 
 %%
-for dirInd = 6:10
+for dirInd = 1:2
     % The name of the scene to demo.
     sceneName = 'cafe_0001a';
 
@@ -19,12 +20,12 @@ for dirInd = 6:10
 
 % Reads the list of frames.
     frameList = get_synched_frames(sceneDir);
-    rawRgbFileName = {}
-    rawDepthFileName = {}
+    rawRgbFileName = {};
+    rawDepthFileName = {};
 %%
 % Displays each pair of synchronized RGB and Depth frames.
     tic;
-    for ii = 1 : 2 : numel(frameList)
+    for ii = 1 : 3 : numel(frameList)
         
       imgRgb = imread([sceneDir '/' frameList(ii).rawRgbFilename]);
       imgDepthRaw = swapbytes(imread([sceneDir '/' frameList(ii).rawDepthFilename]));
@@ -42,6 +43,14 @@ for dirInd = 6:10
       rawDepthFileName{structInd,1} = sceneDirs{dirInd} + "/" + frameList(ii).rawDepthFilename;
       
       structInd = structInd+1;
+      if structInd >= 100
+	      depths = imgDepthsToStruct(:,:,1:structInd-1);
+	      rawDepth = imgRawDepthToStruct(:,:,1:structInd-1);
+	      images = imgRgbToStruct(:,:,:,1:structInd-1);
+	      save('myfile' + str(fileCount) + '.mat', 'images', 'depths', 'rawDepth', 'rawRgbFileName', 'rawDepthFileName');
+	      fileCount = fileCount + 1;
+	      structInd = 1;
+      end
 
 %       figure(1);
 %       % Show the RGB image.
@@ -75,18 +84,5 @@ end
 depths = imgDepthsToStruct(:,:,1:structInd-1);
 rawDepth = imgRawDepthToStruct(:,:,1:structInd-1);
 images = imgRgbToStruct(:,:,:,1:structInd-1);
-
-save('myfile_2.mat', 'images', 'depths', 'rawDepth', 'rawRgbFileName', 'rawDepthFileName');
-
-function [subDirsNames] = GetSubDirsFirstLevelOnly(parentDir)
-    % Get a list of all files and folders in this folder.
-    files = dir(parentDir);
-    % Get a logical vector that tells which is a directory.
-    dirFlags = [files.isdir];
-    % Extract only those that are directories.
-    subDirs = files(dirFlags);
-    subDirsNames = cell(1, numel(subDirs) - 2);
-    for i=3:numel(subDirs)
-        subDirsNames{i-2} = subDirs(i).name;
-    end
-end
+save('myfile' + str(fileCount) + '.mat', 'images', 'depths', 'rawDepth', 'rawRgbFileName', 'rawDepthFileName');
+fileCount = fileCount + 1;

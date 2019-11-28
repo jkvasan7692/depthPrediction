@@ -40,8 +40,8 @@ function frameList = get_synched_frames(sceneDir)
     end
   end
   
-  % fprintf('Found %d depth, %d rgb images, and %d accel dumps.\n', ...
-     % numDepth, numRgb, numAccel);
+  fprintf('Found %d depth, %d rgb images, and %d accel dumps.\n', ...
+      numDepth, numRgb, numAccel);
   
   % Now, go through both images sets, grabbing the rgb and accelerometer
   % data that is nearest to the current timestamp.
@@ -49,7 +49,7 @@ function frameList = get_synched_frames(sceneDir)
   jj = 1; % Current RGB pointer.
   kk = 1; % Current Accel pointer.
   for ii = 1 : numDepth
-    % fprintf('Matching depth image %d/%d\n', ii, numDepth);
+    fprintf('Matching depth image %d/%d\n', ii, numDepth);
     
     % Parse the timestamp.
     timePartsDepth = regexp(frameList(ii).rawDepthFilename(3:end), '-', 'split');
@@ -93,11 +93,11 @@ function frameList = get_synched_frames(sceneDir)
       kk = kk + 1;
     end
     
-    % fprintf('Matched depth %d to rgb %d and accel %d.\n', ii, jj, kk);
+    fprintf('Matched depth %d to rgb %d and accel %d.\n', ii, jj, kk);
     
     % Now save the current RGB filename and ACCEL filename.
     frameList(ii).rawRgbFilename = rgbImages(jj).name;
     frameList(ii).accelFilename = accelRecs(kk).name;
   end
-  % fprintf('\n');
+  fprintf('\n');
 end

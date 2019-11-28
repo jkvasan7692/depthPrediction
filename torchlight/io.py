@@ -20,7 +20,7 @@ with warnings.catch_warnings():
     import h5py
 
 class IO():
-    def __init__(self, work_dir, save_log=True, print_log=True):
+    def __init__(self, work_dir, save_log=False, print_log=True):
         self.work_dir = work_dir
         self.save_log = save_log
         self.print_to_screen = print_log
