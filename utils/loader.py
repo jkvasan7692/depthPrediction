@@ -19,7 +19,7 @@ import cv2
 
 class TrainTestLoader(torch.utils.data.Dataset):
 
-    def __init__(self, train = True):
+    def __init__(self, train = "train"):
         # data: N C T J
         np.random.seed(0)
 
@@ -68,11 +68,14 @@ class TrainTestLoader(torch.utils.data.Dataset):
         # read mat file
         f = h5py.File(path_to_depth)
         num_samples = f['images'].shape[0]
-        idx = int(num_samples*0.9)
-        if train:
-            idxs = np.arange(idx)
+        train_idx = int(num_samples*0.8)
+        test_idx = int(num_samples*0.9)
+        if train == "train":
+            idxs = np.arange(train_idx)
+        elif train == "eval":
+            idxs = np.arange(train_idx + 1, test_idx)
         else:
-            idxs = np.arange(idx + 1, num_samples-1)
+            idxs = np.arange(test_idx+1, num_samples - 1)
         data = np.array(f['images'])[idxs]
         label = np.array(f['depths'])[idxs]
         return data, label

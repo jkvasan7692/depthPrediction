@@ -67,7 +67,7 @@ class Processor(object):
         self.args = args
         # TBD:The data loader class has to be implemented to load the train, test and evaluation images
         self.data_loader = data_loader
-        self.kf = KFold(n_splits=2)
+        #self.kf = KFold(n_splits=2)
         self.result = dict()
         self.iter_info = dict()
         self.train_epoch_info = dict()
@@ -251,7 +251,8 @@ class Processor(object):
     def train(self):
         # TBD: Implement the class to load the dataset.
         # [Resolved] : Class implemented
-        loader = self.data_loader['train']
+        train_loader = self.data_loader['train']
+        eval_loader = self.data_loader['eval']
         self.kf.get_n_splits(loader)
 
         kf_train_loss_value = []
@@ -272,12 +273,12 @@ class Processor(object):
             self.io.print_log('Training epoch: {}'.format(epoch))
 
             # Running the KFold cross validation and averaging the error value for each epoch
-            for train_index, test_index in self.kf.split(loader):
-                kf_train_loss_value.append(self.per_train(loader[train_index]))
-                kf_test_loss_value = self.per_test(loader[test_index])
-                berhu_loss_value.append(kf_test_loss_value[0])
-                rmse_loss_value.append(kf_test_loss_value[1])
-                abs_loss_value.append(kf_test_loss_value[2])
+            kf_train_loss_value.append(self.per_train(train_loader))
+
+            kf_test_loss_value = self.per_test(eval_loader)
+            berhu_loss_value.append(kf_test_loss_value[0])
+            rmse_loss_value.append(kf_test_loss_value[1])
+            abs_loss_value.append(kf_test_loss_value[2])
 
             # Showing the mean loss for the training epoch
             self.train_epoch_info['mean_loss'] = np.mean(kf_train_loss_value)
