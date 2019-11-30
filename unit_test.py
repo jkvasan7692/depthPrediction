@@ -46,7 +46,7 @@ def unit_test_model():
     """
     model = classifier1.DepthPredictionNet()
     print(model)
-    # x = torch.randn(64, 3, 304, 228)                                                                                                                                                                                                                                                                                                              3, 304, 228, requires_grad=True)
+    x = torch.randn(64, 3, 304, 228)
     print(x.shape)
     y = model.forward(x)
     print(y.shape)
@@ -142,36 +142,37 @@ parser.add_argument('--save-log', action='store_true', default=True,
 args = parser.parse_args()
 device = 'cuda:0'
 
+unit_test_model()
 # pr = processor1.Processor(args, None, device)
 # data, labels, data_train, labels_train, data_test, labels_test = \
 #     loader.load_data(data_path)
-a = loader.TrainTestLoader(False)
-d,l = a.__getitem__(0)
-print(type(d))
-print(type(l))
-print(l.shape)
-print(d.shape)
-# print(np.amax(d))
-img__ = d.numpy()
-# print(np.amax(l))
-img_ = np.zeros((d.shape[1], d.shape[2], 3))
-img_[:,:,0] = d[0,:,:]
-img_[:,:,1] = d[1,:,:]
-img_[:,:,2] = d[2,:,:]
-img__ = img_.astype('float32')
-io.imshow(img__)
-io.show()
-# This part of the code should work after the above is resolved.
-# data_loader_train_test.append(torch.utils.data.DataLoader(
-#     dataset=loader.TrainTestLoader(data_train, labels_train, joints, coords, num_classes),
-#     batch_size=args.batch_size,
-#     shuffle=True,
-#     num_workers=args.num_worker * torchlight.ngpu(device),
-#     drop_last=True))
-# data_loader_train_test.append(torch.utils.data.DataLoader(
-#     dataset=loader.TrainTestLoader(data_test, labels_test, joints, coords, num_classes),
-#     batch_size=args.batch_size,
-#     shuffle=True,
-#     num_workers=args.num_worker * torchlight.ngpu(device),
-#     drop_last=True))
-# data_loader_train_test = dict(train=data_loader_train_test[0], test=data_loader_train_test[1])
+# a = loader.TrainTestLoader(False)
+# d,l = a.__getitem__(0)
+# print(type(d))
+# print(type(l))
+# print(l.shape)
+# print(d.shape)
+# # print(np.amax(d))
+# img__ = d.numpy()
+# # print(np.amax(l))
+# img_ = np.zeros((d.shape[1], d.shape[2], 3))
+# img_[:,:,0] = d[0,:,:]
+# img_[:,:,1] = d[1,:,:]
+# img_[:,:,2] = d[2,:,:]
+# img__ = img_.astype('float32')
+# io.imshow(img__)
+# io.show()
+# # This part of the code should work after the above is resolved.
+# # data_loader_train_test.append(torch.utils.data.DataLoader(
+# #     dataset=loader.TrainTestLoader(data_train, labels_train, joints, coords, num_classes),
+# #     batch_size=args.batch_size,
+# #     shuffle=True,
+# #     num_workers=args.num_worker * torchlight.ngpu(device),
+# #     drop_last=True))
+# # data_loader_train_test.append(torch.utils.data.DataLoader(
+# #     dataset=loader.TrainTestLoader(data_test, labels_test, joints, coords, num_classes),
+# #     batch_size=args.batch_size,
+# #     shuffle=True,
+# #     num_workers=args.num_worker * torchlight.ngpu(device),
+# #     drop_last=True))
+# # data_loader_train_test = dict(train=data_loader_train_test[0], test=data_loader_train_test[1])

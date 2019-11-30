@@ -24,9 +24,9 @@ class TrainTestLoader(torch.utils.data.Dataset):
         np.random.seed(0)
 
         self.data, self.label = self.read_data(train)
-        self.transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize(size=(240,320), interpolation=1),
+        self.transform1 = transforms.Compose([
+            transforms.ToPILImage()])
+        self.transform2 = transforms.Compose([transforms.Resize(size=(240,320), interpolation=1),
             transforms.CenterCrop(size=(228,304)),
             transforms.ToTensor(),
             ])
@@ -51,9 +51,14 @@ class TrainTestLoader(torch.utils.data.Dataset):
         label_ = np.zeros((1, label.shape[2], label.shape[1]), dtype='float32')
         label_[0,:,:] = label[0,:,:].T
         label_ = torch.from_numpy(label_)
+        print("Size of label data", label.shape)
 
         data_tensor = torch.from_numpy(img_)
-        data = self.transform(data_tensor)
+        print("Size of input data", data_tensor.shape)
+        data = self.transform1(data_tensor)
+        print("Shape after PIL image conversion", data.shape)
+        data = self.transform2(data_tensor)
+        print("Shape after Center Crop and Resize image conversion", data.shape)
         return data, label_
 
     def read_data(self, train):
