@@ -240,7 +240,7 @@ class Processor(object):
             loss_value = np.mean(loss_value)
             rmse_loss_value = np.sqrt(np.mean(rmse_loss_value))
             abs_loss_value = np.mean(abs_loss_value)
-        return loss_value, rmse_loss_value, abs_loss_value
+        return (loss_value, rmse_loss_value, abs_loss_value)
 
 #        TBD: Ignore the show top-k accuracy which will be resolved later. Keep ths aside for now. Anyways we are
 #        concerned about this when we really need the top k factor mean loss. Which is not our concern now.
@@ -252,8 +252,7 @@ class Processor(object):
         # TBD: Implement the class to load the dataset.
         # [Resolved] : Class implemented
         train_loader = self.data_loader['train']
-        eval_loader = self.data_loader['eval']
-        self.kf.get_n_splits(loader)
+        eval_loader = self.data_loader['validation']
 
         kf_train_loss_value = []
 
@@ -264,7 +263,6 @@ class Processor(object):
         for epoch in range(self.args.start_epoch, self.args.num_epoch):
             self.model.train()
             self.meta_info['epoch'] = epoch
-            self.adjust_lr()
 
             # Reset time to current
             self.io.record_time()
@@ -297,6 +295,7 @@ class Processor(object):
             self.io.check_time("batch_processing_time")
             self.io.print_timer()
 
+            self.adjust_lr()
             # TBD: save model and weights.
             # [Resolved] Only needs to be verified
             if self.best_loss - self.eval_epoch_info['mean_loss'] > 0.01:

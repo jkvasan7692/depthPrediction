@@ -148,18 +148,27 @@ if DEBUG == False:
     # num_classes = np.unique(labels_train).shape[0]
     data_loader_train_test = list()
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(train=True),
+        dataset=loader.TrainTestLoader(train="train"),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=True))
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(train=False),
+        dataset=loader.TrainTestLoader(train="eval"),
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=True))
-    data_loader_train_test = dict(train=data_loader_train_test[0], test=data_loader_train_test[1])
+
+    data_loader_train_test.append(torch.utils.data.DataLoader(
+        dataset=loader_test.NYU_Depth_V2(train="test"),
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_worker * torchlight.ngpu(device),
+        drop_last=False))
+    data_loader_train_test = dict(train=data_loader_train_test[0], validation=data_loader_train_test[1],
+                                  test=data_loader_train_test[2])
+
 else:
     data_loader_train_test = list()
     data_loader_train_test.append(torch.utils.data.DataLoader(
@@ -180,7 +189,7 @@ else:
         shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=False))
-    data_loader_train_test = dict(train=data_loader_train_test[0], eval=data_loader_train_test[1],
+    data_loader_train_test = dict(train=data_loader_train_test[0], validation=data_loader_train_test[1],
                                   test=data_loader_train_test[2])
 
 pr = processor1.Processor(args, data_loader_train_test, device=device)
