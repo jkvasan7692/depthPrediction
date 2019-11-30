@@ -51,14 +51,14 @@ class TrainTestLoader(torch.utils.data.Dataset):
         label_ = np.zeros((1, label.shape[2], label.shape[1]), dtype='float32')
         label_[0,:,:] = label[0,:,:].T
         label_ = torch.from_numpy(label_)
-        print("Size of label data", label.shape)
+        #print("Size of label data", label.shape)
 
         data_tensor = torch.from_numpy(img_)
-        print("Size of input data", data_tensor.shape)
+        #print("Size of input data", data_tensor.shape)
         data = self.transform1(data_tensor)
-        print("Shape after PIL image conversion", data.shape)
-        data = self.transform2(data_tensor)
-        print("Shape after Center Crop and Resize image conversion", data.shape)
+        #print("Shape after PIL image conversion", data.shape)
+        data = self.transform2(data)
+        #print("Shape after Center Crop and Resize image conversion", data.shape)
         return data, label_
 
     def read_data(self, train):
