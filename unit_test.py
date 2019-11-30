@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 import numpy as np
-#from utils import processor1, loader
+from utils import loader
 from net import classifier1
 import torch.nn as nn
 #import torchvision
@@ -142,7 +142,8 @@ parser.add_argument('--save-log', action='store_true', default=True,
 args = parser.parse_args()
 device = 'cuda:0'
 
-unit_test_model()
+#unit_test_model()
+loader1 = loader.TrainTestLoader(train="train", dataset="raw")
 # pr = processor1.Processor(args, None, device)
 # data, labels, data_train, labels_train, data_test, labels_test = \
 #     loader.load_data(data_path)

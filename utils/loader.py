@@ -3,33 +3,39 @@ import h5py
 import os
 import sys
 import numpy as np
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import skimage.io as io
+# import tensorflow as tf
+#from sklearn.model_selection import train_test_split
+#import matplotlib.pyplot as plt
+#import matplotlib.image as mpimg
+#import skimage.io as io
+
+from pathlib import Path
+from nyuv2_python_toolbox.nyuv2 import *
 # torch
 import torch
 from torchvision import datasets, transforms
-try:
-    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
-except:
-    pass
-import cv2
+# try:
+#     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+# except:
+#     pass
+# import cv2
 
 class TrainTestLoader(torch.utils.data.Dataset):
 
-    def __init__(self, train = "train"):
+    def __init__(self, train = "train", dataset="labeled"):
         # data: N C T J
         np.random.seed(0)
 
-        self.data, self.label = self.read_data(train)
-        self.transform1 = transforms.Compose([
-            transforms.ToPILImage()])
-        self.transform2 = transforms.Compose([transforms.Resize(size=(240,320), interpolation=1),
-            transforms.CenterCrop(size=(228,304)),
-            transforms.ToTensor(),
-            ])
+        if dataset == "labeled:":
+            self.data, self.label = self.read_data(train)
+        else:
+            self.data, self.label = self.read_data_raw(train)
+
+        self.transform1 = transforms.Compose([transforms.ToPILImage()])
+        self.transform2 = transforms.Compose([transforms.Resize(size=(240, 320), interpolation=1),
+                                              transforms.CenterCrop(size=(228, 304)), transforms.ToTensor()])
+
+        self.dataset = dataset
 
     def __len__(self):
         return len(self.label)
@@ -79,3 +85,38 @@ class TrainTestLoader(torch.utils.data.Dataset):
         data = np.array(f['images'])[idxs]
         label = np.array(f['depths'])[idxs]
         return data, label
+
+    def read_data_raw(self, train):
+        """
+        Reads the raw data processes and builds the dataset for training
+        :param train:
+        :return:
+        """
+        data = []
+        label = []
+        path_to_depth = Path('/media/kirthi/Seagate Backup Plus Drive/MLProjectDataset')
+        for elems in path_to_depth.glob('*.zip'):
+            raw_archive = RawDatasetArchive(elems)
+
+            for ind in range(len(raw_archive)):
+                frame = raw_archive[ind]
+                depth_path = Path('.') / frame[0]
+                image_path = Path('.') / frame[1]
+
+                if not (depth_path.exists() and color_path.exists()):
+                    raw_archive.extract_frame(frame)
+
+                color = load_color_image(image_path)
+                depth = load_depth_image(depth_path)
+
+                print("Shape of the color image is", color.shape)
+                print("Shape of the depth image is", depth.shape)
+
+                data.append(color)
+                label.append(depth)
+
+        data_arr = np.array(data)
+        label_arr = np.array(label)
+        print(data_arr.shape())
+        print(label_arr.shape())
+        return data_arr, label_arr
