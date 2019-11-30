@@ -250,7 +250,7 @@ class Processor(object):
             self.eval_epoch_info['rmse_loss'] = np.sqrt(np.mean(rmse_loss_value))
             self.eval_epoch_info['abs_loss'] = np.mean(abs_loss_value)
             self.show_epoch_info(self.eval_epoch_info)
-            if np.fabs(self.eval_epoch_info['mean_loss'] - self.best_loss) > self.args.lr_thresh:
+            if np.fabs(self.eval_epoch_info['mean_loss'] - self.best_loss) > 0.01:
                 self.low_loss_updated = True
             else:
                 self.low_loss_updated = False
