@@ -37,14 +37,24 @@ class UpconvLayer(nn.Module):
     """
     def __init__(self, a_in_channels , a_out_channels, a_kernel_size=5, a_stride=1):
         super(UpconvLayer, self).__init__()
-        self.unpool = nn.UpsamplingNearest2d(scale_factor=2)
+        # self.unpool = nn.UpsamplingNearest2d(scale_factor=2)
         self.conv = nn.Conv2d(a_in_channels, a_out_channels, kernel_size=a_kernel_size, stride=a_stride, padding=2)
         self.conv.weight.data.normal_(0.0, 0.01)
 
     def forward(self, a_input):
-        a_hidden = self.unpool(a_input)
+        a_hidden = self.zeropad(a_input)
         a_out = self.conv(a_hidden)
         return a_out
+
+    def zeropad(self, x, stride=2):
+        w = x.new_zeros(stride, stride)
+        w[0, 0] = 1
+        out = F.conv_transpose2d(x, w.expand(x.size(1), 1, stride, stride), stride=stride, groups=x.size(1))
+        #print("Shape before zero padding", x.shape)
+        #print("Data before zero padding", x)
+        #print("Shape after zero padding", out.shape)
+        #print("Data after padding", out)
+        return out
 
 class DepthPredictionNet(nn.Module):
     """

@@ -2,16 +2,16 @@ import argparse
 import os
 import sys
 import numpy as np
-from utils import processor1, loader
+#from utils import processor1, loader
 from net import classifier1
 import torch.nn as nn
-import torchvision
-from torchvision import transforms
+#import torchvision
+#from torchvision import transforms
 
 
 import torch
-import torchlight
-import skimage.io as io
+#import torchlight
+#import skimage.io as io
 
 
 def unit_test_loss():
