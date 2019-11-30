@@ -184,4 +184,4 @@ if args.train:
 #     f = pr.save_best_feature(ftype, data, joints, coords)
 
 # TBD: The test function has to be implemented, instead of the per_test function.
-pr.per_test()
+pr.test()

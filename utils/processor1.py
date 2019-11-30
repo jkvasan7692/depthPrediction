@@ -8,6 +8,8 @@ import torch.optim as optim
 import torch.nn as nn
 from net import classifier1
 
+from sklearn.model_selection import KFold
+
 
 class ReverseHubberLoss(nn.Module):
     """
@@ -65,6 +67,7 @@ class Processor(object):
         self.args = args
         # TBD:The data loader class has to be implemented to load the train, test and evaluation images
         self.data_loader = data_loader
+        self.kf = KFold(n_splits=2)
         self.result = dict()
         self.iter_info = dict()
         self.train_epoch_info = dict()
@@ -163,19 +166,10 @@ class Processor(object):
     #     #     self.accuracy_updated = False
     #     self.io.print_log('\tTop{}: {:.2f}%. Best so far: {:.2f}%.'.format(k, accuracy, self.best_accuracy[0, k-1]))
 #
-    def per_train(self):
-
-        self.model.train()
-        self.adjust_lr()
-        # TBD: Implement the class to load the dataset.
-        # [Resolved] : Class implemented
-        loader = self.data_loader['train']
+    def per_train(self, train_data):
         loss_value = []
 
-        # Reset time to current
-        self.io.record_time()
-
-        for data, label in loader:
+        for data, label in train_data:
             # get data
             data = data.float().to(self.device)
             label = label.float().to(self.device)
@@ -196,10 +190,7 @@ class Processor(object):
             self.show_iter_info()
             self.meta_info['iter'] += 1
 
-        self.train_epoch_info['mean_loss'] = np.mean(loss_value)
-        self.show_epoch_info(self.train_epoch_info)
-        self.io.check_time("batch_processing_time")
-        self.io.print_timer()
+        return np.mean(loss_value)
 
         # TBD: Ignore the topk block of code for now
 #         # for k in self.args.topk:
@@ -207,19 +198,18 @@ class Processor(object):
 #         # if self.accuracy_updated:
 #         # self.model.extract_feature()
 
-    def per_test(self, evaluation=True):
+    def per_test(self, test_data, evaluation=True):
 
         self.model.eval()
         # TBD: Once the loader class has been implemented then the dataset can be clearly demarcated
         # [Resolved]: The loader class has been implemented for now.
-        loader = self.data_loader['test']
         loss_value = []
         rmse_loss_value = []
         abs_loss_value = []
         result_frag = []
         label_frag = []
 
-        for data, label in loader:
+        for data, label in test_data:
 
             # get data from the loader class
             data = data.float().to(self.device)
@@ -229,31 +219,28 @@ class Processor(object):
             with torch.no_grad():
                 output = self.model(data)
             # Append the output of the prediction map
-            result_frag.append(output.data.cpu().numpy())
+            #result_frag.append(output.data.cpu().numpy())
 
             # get loss in case of evaluation flag set to True
             if evaluation:
                 loss = self.loss(output, label)
                 rmse_loss = self.mean_loss(output,label)
                 abs_loss = self.abs_loss(output, label)
+
                 loss_value.append(loss.item())
                 rmse_loss_value.append(rmse_loss.item())
                 abs_loss_value.append(abs_loss.item())
                 label_frag.append(label.data.cpu().numpy())
 
         # Store the depth prediction maps for each image in dictionary
-        self.result = np.concatenate(result_frag)
+        # self.result = np.concatenate(result_frag)
         if evaluation:
             # Store the depth label data for each image in dictionary
-            self.label = np.concatenate(label_frag)
-            self.eval_epoch_info['mean_loss'] = np.mean(loss_value)
-            self.eval_epoch_info['rmse_loss'] = np.sqrt(np.mean(rmse_loss_value))
-            self.eval_epoch_info['abs_loss'] = np.mean(abs_loss_value)
-            self.show_epoch_info(self.eval_epoch_info)
-            if np.fabs(self.eval_epoch_info['mean_loss'] - self.best_loss) > 0.01:
-                self.low_loss_updated = True
-            else:
-                self.low_loss_updated = False
+            # self.label = np.concatenate(label_frag)
+            loss_value = np.mean(loss_value)
+            rmse_loss_value = np.sqrt(np.mean(rmse_loss_value))
+            abs_loss_value = np.mean(abs_loss_value)
+        return loss_value, rmse_loss_value, abs_loss_value
 
 #        TBD: Ignore the show top-k accuracy which will be resolved later. Keep ths aside for now. Anyways we are
 #        concerned about this when we really need the top k factor mean loss. Which is not our concern now.
@@ -262,25 +249,56 @@ class Processor(object):
 #                 self.show_topk(k)
 #
     def train(self):
+        # TBD: Implement the class to load the dataset.
+        # [Resolved] : Class implemented
+        loader = self.data_loader['train']
+        self.kf.get_n_splits(loader)
+
+        kf_train_loss_value = []
+
+        berhu_loss_value = []
+        rmse_loss_value = []
+        abs_loss_value = []
 
         for epoch in range(self.args.start_epoch, self.args.num_epoch):
+            self.model.train()
             self.meta_info['epoch'] = epoch
+            self.adjust_lr()
+
+            # Reset time to current
+            self.io.record_time()
 
             # training
             self.io.print_log('Training epoch: {}'.format(epoch))
-            self.per_train()
+
+            # Running the KFold cross validation and averaging the error value for each epoch
+            for train_index, test_index in self.kf.split(loader):
+                kf_train_loss_value.append(self.per_train(loader[train_index]))
+                kf_test_loss_value = self.per_test(loader[test_index])
+                berhu_loss_value.append(kf_test_loss_value[0])
+                rmse_loss_value.append(kf_test_loss_value[1])
+                abs_loss_value.append(kf_test_loss_value[2])
+
+            # Showing the mean loss for the training epoch
+            self.train_epoch_info['mean_loss'] = np.mean(kf_train_loss_value)
+            self.show_epoch_info(self.train_epoch_info)
             self.io.print_log('Done.')
 
-            # evaluation
-            if (epoch % self.args.eval_interval == 0) or (
-                    epoch + 1 == self.args.num_epoch):
-                self.io.print_log('Eval epoch: {}'.format(epoch))
-                self.per_test()
-                self.io.print_log('Done.')
+            # evaluation showing all the losses for the cross validation
+            self.io.print_log('Cross validation Eval epoch: {}'.format(epoch))
+            self.eval_epoch_info['mean_loss'] = np.mean(berhu_loss_value)
+            self.eval_epoch_info['rmse_loss'] = np.mean(berhu_loss_value)
+            self.eval_epoch_info['abs_rel_loss'] = np.mean(berhu_loss_value)
+            self.show_epoch_info(self.eval_epoch_info)
+            self.io.print_log('Done.')
+
+            # print Epoch processing time
+            self.io.check_time("batch_processing_time")
+            self.io.print_timer()
 
             # TBD: save model and weights.
             # [Resolved] Only needs to be verified
-            if self.low_loss_updated:
+            if self.best_loss - self.eval_epoch_info['mean_loss'] > 0.01:
                 self.best_loss = self.eval_epoch_info['mean_loss']
                 self.best_epoch = epoch
                 torch.save(self.model.state_dict(),
@@ -291,23 +309,29 @@ class Processor(object):
     def test(self):
 
         # the path of weights must be appointed
-        if self.args.weights is None:
-            raise ValueError('Please appoint --weights.')
-        self.io.print_log('Model:   {}.'.format(self.args.model))
-        self.io.print_log('Weights: {}.'.format(self.args.weights))
-
+        # if self.args.weights is None:
+        #     raise ValueError('Please appoint --weights.')
+        # self.io.print_log('Model:   {}.'.format(self.args.model))
+        # self.io.print_log('Weights: {}.'.format(self.args.weights))
         # evaluation
-        self.io.print_log('Evaluation Start:')
-        self.per_test()
+        loader = self.data_loader['test']
+        self.model.eval()
+
+        self.io.print_log('Test Evaluation Start:')
+        test_loss = self.per_test(loader)
+        self.eval_epoch_info['mean_loss'] = test_loss[0]
+        self.eval_epoch_info['rmse_loss'] = test_loss[1]
+        self.eval_epoch_info['abs_rel_loss'] = test_loss[2]
+        self.show_epoch_info(self.eval_epoch_info)
         self.io.print_log('Done.\n')
 
         # save the output of model
-        if self.args.save_result:
-            result_dict = dict(
-                # TBD: Data loader class once implemented will be able to save the weights automatically
-                zip(self.data_loader['test'].dataset.sample_name,
-                    self.result))
-            self.io.save_pkl(result_dict, 'test_result.pkl')
+        # if self.args.save_result:
+        #     result_dict = dict(
+        #         # TBD: Data loader class once implemented will be able to save the weights automatically
+        #         zip(self.data_loader['test'].dataset.sample_name,
+        #             self.result))
+        #     self.io.save_pkl(result_dict, 'test_result.pkl')
 
     # TBD: The saving of best features is to be done later after performing a dry run.
     # def save_best_feature(self, ftype, data, joints, coords):
