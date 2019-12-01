@@ -146,26 +146,31 @@ if DEBUG == False:
     # data, labels, data_train, labels_train, data_test, labels_test = \
         # loader.load_data(data_path, ftype, coords, joints, cycles=cycles)
     # num_classes = np.unique(labels_train).shape[0]
+    dataset_object = loader.TrainTestLoader(train = "train", dataset="raw")
+    print("Total dataset length: ", len(dataset_object))
+    train_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "train", dataset= "raw")
+    eval_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "eval", dataset= "raw")
+    test_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "test", dataset= "raw")
+    print("train length: ", len(train_dataset_object))
+    print("eval length: ", len(eval_dataset_object))
+    print("test length: ", len(test_dataset_object))
+
+    print("Train Sample Data shape, train sample label shape: ",train_dataset_object[2][0].shape, train_dataset_object[2][1].shape)
     data_loader_train_test = list()
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(train="train"),
-        batch_size=args.batch_size,
-        shuffle=True,
+        dataset=train_dataset_object, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=True))
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader.TrainTestLoader(train="eval"),
-        batch_size=args.batch_size,
-        shuffle=True,
+        dataset=eval_dataset_object, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=True))
 
     data_loader_train_test.append(torch.utils.data.DataLoader(
-        dataset=loader_test.NYU_Depth_V2(train="test"),
-        batch_size=args.batch_size,
-        shuffle=True,
+        dataset=test_dataset_object, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
         drop_last=False))
+
     data_loader_train_test = dict(train=data_loader_train_test[0], validation=data_loader_train_test[1],
                                   test=data_loader_train_test[2])
 
