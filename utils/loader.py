@@ -90,8 +90,9 @@ class TrainTestLoader(torch.utils.data.Dataset):
             image_pil = self.data[index]
             data = self.transform2(image_pil)
             label_tensor = self.transform3(label_pil)
-        print("Data shape", data.shape)
-        print("Label shape", label_tensor.shape)
+            label_tensor = torch.div(label_tensor, 10)
+        #print("Data shape", data.shape)
+        #print("Label shape", label_tensor.shape)
         return data, label_tensor
 
     def read_data(self, train):
