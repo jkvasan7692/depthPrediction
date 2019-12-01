@@ -10,7 +10,7 @@ import numpy as np
 #import skimage.io as io
 
 from pathlib import Path
-from nyuv2_python_toolbox.nyuv2 import *
+from nyuv2 import *
 # torch
 import torch
 from torchvision import datasets, transforms
@@ -94,29 +94,25 @@ class TrainTestLoader(torch.utils.data.Dataset):
         """
         data = []
         label = []
-        path_to_depth = Path('/media/kirthi/Seagate Backup Plus Drive/MLProjectDataset')
+        path_to_depth = Path('/home/jkv92/data')
         for elems in path_to_depth.glob('*.zip'):
             raw_archive = RawDatasetArchive(elems)
+            print("Length is ", len(raw_archive), elems)
 
-            for ind in range(len(raw_archive)):
+            for ind in range(0, len(raw_archive), 15):
                 frame = raw_archive[ind]
-                depth_path = Path('.') / frame[0]
-                image_path = Path('.') / frame[1]
+                depth_path = path_to_depth / frame[0]
+                image_path = path_to_depth / frame[1]
 
-                if not (depth_path.exists() and color_path.exists()):
+                if not (depth_path.exists() and image_path.exists()):
                     raw_archive.extract_frame(frame)
+                #print(depth_path, image_path)
 
-                color = load_color_image(image_path)
-                depth = load_depth_image(depth_path)
-
-                print("Shape of the color image is", color.shape)
-                print("Shape of the depth image is", depth.shape)
-
-                data.append(color)
-                label.append(depth)
-
-        data_arr = np.array(data)
-        label_arr = np.array(label)
-        print(data_arr.shape())
-        print(label_arr.shape())
-        return data_arr, label_arr
+                if depth_path.stat().st_size > 0 and image_path.stat().st_size > 0:
+                    color = load_color_image(image_path)
+                    depth = load_depth_image(depth_path)
+                    #print(color)
+                    #print(depth)
+                    data.append(color)
+                    label.append(depth)
+        return data, label
