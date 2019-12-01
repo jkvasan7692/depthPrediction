@@ -42,30 +42,24 @@ class TrainTestLoader(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         # get data
-        data_numpy = np.array(self.data[index]).astype('float32')/255.0
-        # print(np.amax(data_numpy))
-        # asd
-        label = self.label[index]/10
-        img_ = np.zeros((3, data_numpy.shape[2], data_numpy.shape[1]), dtype='float32')
-        img_[0,:,:] = data_numpy[0,:,:].T
-        img_[1,:,:] = data_numpy[1,:,:].T
-        img_[2,:,:] = data_numpy[2,:,:].T
+        if self.dataset == "labeled":
+            label_tensor = torch.from_numpy(self.label[index])
+            #print("Size of label data", label.shape)
 
-        # print(data_numpy)
-        # print(type(data_numpy))
-        label = np.expand_dims(label, axis=0)
-        label_ = np.zeros((1, label.shape[2], label.shape[1]), dtype='float32')
-        label_[0,:,:] = label[0,:,:].T
-        label_ = torch.from_numpy(label_)
-        #print("Size of label data", label.shape)
-
-        data_tensor = torch.from_numpy(img_)
-        #print("Size of input data", data_tensor.shape)
-        data = self.transform1(data_tensor)
-        #print("Shape after PIL image conversion", data.shape)
-        data = self.transform2(data)
-        #print("Shape after Center Crop and Resize image conversion", data.shape)
-        return data, label_
+            data_tensor = torch.from_numpy(self.data[index])
+            #print("Size of input data", data_tensor.shape)
+            data = self.transform1(data_tensor)
+            #print("Shape after PIL image conversion", data.shape)
+            data = self.transform2(data)
+            #print("Shape after Center Crop and Resize image conversion", data.shape)
+        else:
+            label_pil = self.label[index]
+            image_pil = self.data[index]
+            data = self.transform2(image_pil)
+            label_tensor = transforms.ToTensor(label_pil)
+        print("Data shape", data.shape)
+        print("Label shape", label_tensor.shape)
+        return data, label_tensor
 
     def read_data(self, train):
         # data path
@@ -83,8 +77,18 @@ class TrainTestLoader(torch.utils.data.Dataset):
         else:
             idxs = np.arange(test_idx+1, num_samples - 1)
         data = np.array(f['images'])[idxs]
+        data_numpy = np.array(data).astype('float32')/255.0
+        img = np.zeros((3, data_numpy.shape[2], data_numpy.shape[1]), dtype='float32')
+        img[0,:,:] = data_numpy[0,:,:].T
+        img[1,:,:] = data_numpy[1,:,:].T
+        img[2,:,:] = data_numpy[2,:,:].T
+
         label = np.array(f['depths'])[idxs]
-        return data, label
+        label_processed = label/10
+        label = np.expand_dims(label_processed, axis=0)
+        label_ = np.zeros((1, label_processed.shape[2], label_processed.shape[1]), dtype='float32')
+        label_[0,:,:] = label_processed[0,:,:].T
+        return data, img_
 
     def read_data_raw(self, train):
         """
