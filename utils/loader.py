@@ -11,6 +11,7 @@ import numpy as np
 
 from pathlib import Path
 from nyuv2 import *
+from nyuv2.raw import project
 # torch
 import torch
 from torchvision import datasets, transforms
@@ -139,10 +140,11 @@ class TrainTestLoader(torch.utils.data.Dataset):
                 if depth_path.stat().st_size > 0 and image_path.stat().st_size > 0:
                     color = load_color_image(image_path)
                     depth = load_depth_image(depth_path)
+                    depth_abs = project.depth_rel_to_depth_abs(depth)
                     #print(color)
                     #print(depth)
                     data.append(color)
-                    label.append(depth)
+                    label.append(depth_abs)
         print("Length of items", len(data))
 
         print("Length of depth items", len(label))
