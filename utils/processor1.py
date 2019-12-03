@@ -286,8 +286,8 @@ class Processor(object):
             # evaluation showing all the losses for the cross validation
             self.io.print_log('Cross validation Eval epoch: {}'.format(epoch))
             self.eval_epoch_info['mean_loss'] = np.mean(berhu_loss_value)
-            self.eval_epoch_info['rmse_loss'] = np.mean(berhu_loss_value)
-            self.eval_epoch_info['abs_rel_loss'] = np.mean(berhu_loss_value)
+            self.eval_epoch_info['rmse_loss'] = np.mean(rmse_loss_value)
+            self.eval_epoch_info['abs_rel_loss'] = np.mean(abs_loss_value)
             self.show_epoch_info(self.eval_epoch_info)
             self.io.print_log('Done.')
 
