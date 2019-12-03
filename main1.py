@@ -146,16 +146,16 @@ if DEBUG == False:
     # data, labels, data_train, labels_train, data_test, labels_test = \
         # loader.load_data(data_path, ftype, coords, joints, cycles=cycles)
     # num_classes = np.unique(labels_train).shape[0]
-    dataset_object = loader.TrainTestLoader(train = "train", dataset="raw")
+    dataset_object = loader.TrainTestLoader(train = "train", dataset="labeled")
     print("Total dataset length: ", len(dataset_object))
-    train_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "train", dataset= "raw")
-    eval_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "eval", dataset= "raw")
-    test_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "test", dataset= "raw")
+    train_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "train", dataset= "labeled")
+    eval_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "eval", dataset= "labeled")
+    test_dataset_object = loader.TrainTestLoader(parent_dataset=dataset_object, train = "test", dataset= "labeled")
     print("train length: ", len(train_dataset_object))
     print("eval length: ", len(eval_dataset_object))
     print("test length: ", len(test_dataset_object))
 
-    print("Train Sample Data shape, train sample label shape: ",train_dataset_object[2][0].shape, train_dataset_object[2][1].shape)
+    print("Train Sample Data shape, train sample label shape: ",dataset_object[2][0].shape, dataset_object[2][1].shape)
     data_loader_train_test = list()
     data_loader_train_test.append(torch.utils.data.DataLoader(
         dataset=train_dataset_object, batch_size=args.batch_size, shuffle=True,

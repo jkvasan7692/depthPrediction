@@ -143,7 +143,7 @@ args = parser.parse_args()
 device = 'cuda:0'
 
 #unit_test_model()
-loader1 = loader.TrainTestLoader(train="train", dataset="raw")
+loader1 = loader.TrainTestLoader(train="train", dataset="labeled")
 # pr = processor1.Processor(args, None, device)
 # data, labels, data_train, labels_train, data_test, labels_test = \
 #     loader.load_data(data_path)
