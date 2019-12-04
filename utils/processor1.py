@@ -7,6 +7,7 @@ import torchlight
 import torch.optim as optim
 import torch.nn as nn
 from net import classifier1
+import pickle
 
 from sklearn.model_selection import KFold
 
@@ -92,6 +93,9 @@ class Processor(object):
         self.mean_loss = nn.MSELoss()
         self.abs_loss = nn.L1Loss()
         self.best_loss = math.inf
+
+        self.train_loss_save = dict()
+        self.cross_loss_save = dict()
         #self.step_epochs = [math.ceil(float(self.args.num_epoch * x)) for x in self.args.step]
         self.best_epoch = None
         self.best_mean_error = np.zeros((1, np.max(self.args.topk)))
@@ -168,6 +172,8 @@ class Processor(object):
 #
     def per_train(self, train_data):
         loss_value = []
+        rmse_loss_value = []
+        abs_loss_value = []
 
         for data, label in train_data:
             # get data
@@ -177,6 +183,8 @@ class Processor(object):
             # forward pass and compute the loss
             output = self.model(data)
             loss = self.loss(output, label)
+            rmse_loss = self.mean_loss(output, label)
+            abs_loss = self.abs_loss(output, label)
 
             # backward and update the weights
             self.optimizer.zero_grad()
@@ -187,10 +195,12 @@ class Processor(object):
             self.iter_info['loss'] = loss.data.item()
             self.iter_info['lr'] = '{:.6f}'.format(self.lr)
             loss_value.append(self.iter_info['loss'])
+            rmse_loss_value.append(rmse_loss.item())
+            abs_loss_value.append(abs_loss.item())
             self.show_iter_info()
             self.meta_info['iter'] += 1
 
-        return np.mean(loss_value)
+        return np.mean(loss_value), np.sqrt(np.mean(rmse_loss_value)), np.mean(abs_loss_value)
 
         # TBD: Ignore the topk block of code for now
 #         # for k in self.args.topk:
@@ -259,6 +269,13 @@ class Processor(object):
         berhu_loss_value = []
         rmse_loss_value = []
         abs_loss_value = []
+        self.train_loss_save['mean_loss'] = []
+        self.train_loss_save['rmse_loss'] = []
+        self.train_loss_save['abs_loss'] = []
+
+        self.cross_loss_save['mean_loss'] = []
+        self.cross_loss_save['abs_loss'] = []
+        self.cross_loss_save['mean_loss'] = []
 
         for epoch in range(self.args.start_epoch, self.args.num_epoch):
             self.model.train()
@@ -271,15 +288,22 @@ class Processor(object):
             self.io.print_log('Training epoch: {}'.format(epoch))
 
             # Running the KFold cross validation and averaging the error value for each epoch
-            kf_train_loss_value.append(self.per_train(train_loader))
+            kf_train_loss_value = self.per_train(train_loader)
+            self.train_loss_save['mean_loss'].append(kf_train_loss_value[0])
+            self.train_loss_save['rmse_loss'].append(kf_train_loss_value[1])
+            self.train_loss_save['abs_loss'].append(kf_train_loss_value[2])
 
             kf_test_loss_value = self.per_test(eval_loader)
-            berhu_loss_value.append(kf_test_loss_value[0])
-            rmse_loss_value.append(kf_test_loss_value[1])
-            abs_loss_value.append(kf_test_loss_value[2])
+            berhu_loss_value = kf_test_loss_value[0]
+            rmse_loss_value = kf_test_loss_value[1]
+            abs_loss_value = kf_test_loss_value[2]
+            self.cross_loss_save['mean_loss'].append(berhu_loss_value)
+            self.cross_loss_save['abs_loss'].append(abs_loss_value)
+            self.cross_loss_save['mean_loss'].append(rmse_loss_value)
 
             # Showing the mean loss for the training epoch
-            self.train_epoch_info['mean_loss'] = np.mean(kf_train_loss_value)
+            self.train_epoch_info['mean_loss'] = np.mean(kf_train_loss_value[0])
+            self.train_epoch_info['rmse_loss'] = kf_train_loss_value[1]
             self.show_epoch_info(self.train_epoch_info)
             self.io.print_log('Done.')
 
@@ -304,6 +328,10 @@ class Processor(object):
                 torch.save(self.model.state_dict(),
                            os.path.join('./model_output/',
                                         'epoch{}_acc{:.2f}_model.pth.tar'.format(epoch, 1)))
+        pickle.dump(self.train_loss_save, open('../data/train_dump.txt', 'wb'))
+
+
+        pickle.dump(self.cross_loss_save, open('../data/cross_dump.txt', 'wb'))
 
     # The function is not being used. So lets not care about this for now.
     def test(self):
