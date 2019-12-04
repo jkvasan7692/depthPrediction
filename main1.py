@@ -160,11 +160,11 @@ if DEBUG == False:
     data_loader_train_test.append(torch.utils.data.DataLoader(
         dataset=train_dataset_object, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
-        drop_last=True))
+        drop_last=False))
     data_loader_train_test.append(torch.utils.data.DataLoader(
         dataset=eval_dataset_object, batch_size=args.batch_size, shuffle=True,
         num_workers=args.num_worker * torchlight.ngpu(device),
-        drop_last=True))
+        drop_last=False))
 
     data_loader_train_test.append(torch.utils.data.DataLoader(
         dataset=test_dataset_object, batch_size=args.batch_size, shuffle=True,

@@ -12,6 +12,25 @@ import pickle
 from sklearn.model_selection import KFold
 
 
+class MAPELoss(nn.Module):
+    """
+    Reverse Hubber Loss function
+    """
+    def __init__(self):
+        super(MAPELoss, self).__init__()
+
+    def forward(self, predicted_out, target):
+        """
+        Function computes the loss in the forward pass between the target and the predicted output
+        :param predicted_out:
+        :param target:
+        :return:
+        """
+        ret = torch.mean(torch.abs((target - predicted_out)/target))
+        #print("Return", ret)
+        return ret
+
+
 class ReverseHubberLoss(nn.Module):
     """
     Reverse Hubber Loss function
@@ -91,7 +110,7 @@ class Processor(object):
         # [Resolved: Doing at Model level]
         self.loss = ReverseHubberLoss()
         self.mean_loss = nn.MSELoss()
-        self.abs_loss = nn.L1Loss()
+        self.abs_loss = MAPELoss()
         self.best_loss = math.inf
 
         self.train_loss_save = dict()
@@ -100,6 +119,16 @@ class Processor(object):
         self.best_epoch = None
         self.best_mean_error = np.zeros((1, np.max(self.args.topk)))
         self.mean_error_updated = False
+
+
+        self.train_loss_save['mean_loss'] = []
+        self.train_loss_save['rmse_loss'] = []
+        self.train_loss_save['abs_loss'] = []
+
+        self.cross_loss_save['mean_loss'] = []
+        self.cross_loss_save['abs_loss'] = []
+        self.cross_loss_save['mean_loss'] = []
+
 
         # optimizer
         if self.args.optimizer == 'SGD':
@@ -122,7 +151,7 @@ class Processor(object):
     def adjust_lr(self):
 
         if self.args.optimizer == 'SGD' and (self.meta_info['epoch'] % self.args.step == 0):
-            if np.fabs(self.mean_loss_per_lr_step - np.mean(self.eval_epoch_info['mean_loss'])) < self.args.lr_thresh:
+            if np.fabs(self.mean_loss_per_lr_step - np.mean(self.eval_epoch_info['mean_loss'])) < 0.001:
                 lr = self.lr * 0.5
                 for param_group in self.optimizer.param_groups:
                     param_group['lr'] = lr
@@ -183,7 +212,7 @@ class Processor(object):
             # forward pass and compute the loss
             output = self.model(data)
             loss = self.loss(output, label)
-            rmse_loss = self.mean_loss(output, label)
+            rmse_loss = torch.sqrt(self.mean_loss(output, label))
             abs_loss = self.abs_loss(output, label)
 
             # backward and update the weights
@@ -197,10 +226,13 @@ class Processor(object):
             loss_value.append(self.iter_info['loss'])
             rmse_loss_value.append(rmse_loss.item())
             abs_loss_value.append(abs_loss.item())
+            self.train_loss_save['mean_loss'].append(self.iter_info['loss'])
+            self.train_loss_save['rmse_loss'].append(rmse_loss.item())
+            self.train_loss_save['abs_loss'].append(abs_loss.item())
             self.show_iter_info()
             self.meta_info['iter'] += 1
 
-        return np.mean(loss_value), np.sqrt(np.mean(rmse_loss_value)), np.mean(abs_loss_value)
+        return np.mean(loss_value), np.sqrt(np.mean(np.square(rmse_loss_value))), np.mean(abs_loss_value)
 
         # TBD: Ignore the topk block of code for now
 #         # for k in self.args.topk:
@@ -234,7 +266,7 @@ class Processor(object):
             # get loss in case of evaluation flag set to True
             if evaluation:
                 loss = self.loss(output, label)
-                rmse_loss = self.mean_loss(output,label)
+                rmse_loss = torch.sqrt(self.mean_loss(output,label))
                 abs_loss = self.abs_loss(output, label)
 
                 loss_value.append(loss.item())
@@ -242,13 +274,16 @@ class Processor(object):
                 abs_loss_value.append(abs_loss.item())
                 label_frag.append(label.data.cpu().numpy())
 
+                self.cross_loss_save['mean_loss'].append(loss.item())
+                self.cross_loss_save['abs_loss'].append(rmse_loss.item())
+                self.cross_loss_save['mean_loss'].append(abs_loss.item())
         # Store the depth prediction maps for each image in dictionary
         # self.result = np.concatenate(result_frag)
         if evaluation:
             # Store the depth label data for each image in dictionary
             # self.label = np.concatenate(label_frag)
             loss_value = np.mean(loss_value)
-            rmse_loss_value = np.sqrt(np.mean(rmse_loss_value))
+            rmse_loss_value = np.sqrt(np.mean(np.square(rmse_loss_value)))
             abs_loss_value = np.mean(abs_loss_value)
         return (loss_value, rmse_loss_value, abs_loss_value)
 
@@ -269,13 +304,6 @@ class Processor(object):
         berhu_loss_value = []
         rmse_loss_value = []
         abs_loss_value = []
-        self.train_loss_save['mean_loss'] = []
-        self.train_loss_save['rmse_loss'] = []
-        self.train_loss_save['abs_loss'] = []
-
-        self.cross_loss_save['mean_loss'] = []
-        self.cross_loss_save['abs_loss'] = []
-        self.cross_loss_save['mean_loss'] = []
 
         for epoch in range(self.args.start_epoch, self.args.num_epoch):
             self.model.train()
@@ -289,29 +317,24 @@ class Processor(object):
 
             # Running the KFold cross validation and averaging the error value for each epoch
             kf_train_loss_value = self.per_train(train_loader)
-            self.train_loss_save['mean_loss'].append(kf_train_loss_value[0])
-            self.train_loss_save['rmse_loss'].append(kf_train_loss_value[1])
-            self.train_loss_save['abs_loss'].append(kf_train_loss_value[2])
 
             kf_test_loss_value = self.per_test(eval_loader)
             berhu_loss_value = kf_test_loss_value[0]
             rmse_loss_value = kf_test_loss_value[1]
             abs_loss_value = kf_test_loss_value[2]
-            self.cross_loss_save['mean_loss'].append(berhu_loss_value)
-            self.cross_loss_save['abs_loss'].append(abs_loss_value)
-            self.cross_loss_save['mean_loss'].append(rmse_loss_value)
 
             # Showing the mean loss for the training epoch
-            self.train_epoch_info['mean_loss'] = np.mean(kf_train_loss_value[0])
+            self.train_epoch_info['mean_loss'] = kf_train_loss_value[0]
             self.train_epoch_info['rmse_loss'] = kf_train_loss_value[1]
+            self.train_epoch_info['abs_rel_loss'] = kf_train_loss_value[2]
             self.show_epoch_info(self.train_epoch_info)
             self.io.print_log('Done.')
 
             # evaluation showing all the losses for the cross validation
             self.io.print_log('Cross validation Eval epoch: {}'.format(epoch))
-            self.eval_epoch_info['mean_loss'] = np.mean(berhu_loss_value)
-            self.eval_epoch_info['rmse_loss'] = np.mean(rmse_loss_value)
-            self.eval_epoch_info['abs_rel_loss'] = np.mean(abs_loss_value)
+            self.eval_epoch_info['mean_loss'] = berhu_loss_value
+            self.eval_epoch_info['rmse_loss'] = rmse_loss_value
+            self.eval_epoch_info['abs_rel_loss'] = abs_loss_value
             self.show_epoch_info(self.eval_epoch_info)
             self.io.print_log('Done.')
 
@@ -322,7 +345,7 @@ class Processor(object):
             self.adjust_lr()
             # TBD: save model and weights.
             # [Resolved] Only needs to be verified
-            if self.best_loss - self.eval_epoch_info['mean_loss'] > 0.01:
+            if self.best_loss - self.eval_epoch_info['mean_loss'] > 0.001:
                 self.best_loss = self.eval_epoch_info['mean_loss']
                 self.best_epoch = epoch
                 torch.save(self.model.state_dict(),

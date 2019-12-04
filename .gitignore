@@ -1,5 +1,5 @@
 # Don't track content of these folders
-model_output/
+model_output*/
 .idea/
 
 
